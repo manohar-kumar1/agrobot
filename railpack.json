@@ -15,7 +15,7 @@
       "commands": [
         { "src": "requirements.txt", "dest": "requirements.txt" },
         {
-          "cmd": "pip install --no-cache-dir -r requirements.txt",
+          "cmd": "pip install -r requirements.txt",
           "customName": "Install Python dependencies"
         }
       ]
@@ -34,16 +34,13 @@
     "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
     "inputs": [
       {
-        "step": "install",
-        "include": ["."]
-      },
-      {
         "step": "build",
         "include": ["."]
       }
     ],
     "variables": {
-      "PYTHONUNBUFFERED": "1"
+      "PYTHONUNBUFFERED": "1",
+      "PYTHONDONTWRITEBYTECODE": "1"
     }
   }
 }
