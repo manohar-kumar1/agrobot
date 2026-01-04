@@ -1,8 +1,3 @@
-"""
-Query endpoint for the Agriculture Chatbot.
-Handles disease, scheme, and hybrid queries through the RAG pipeline.
-"""
-
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import QueryRequest, QueryResponse, ErrorResponse
 from app.agents.rag_agent import RAGAgent
@@ -11,12 +6,10 @@ from app.core.logging_config import get_logger
 router = APIRouter()
 logger = get_logger(__name__)
 
-# Initialize RAG agent (singleton pattern for efficiency)
 _rag_agent: RAGAgent | None = None
 
 
 def get_rag_agent() -> RAGAgent:
-    """Get or create the RAG agent singleton."""
     global _rag_agent
     if _rag_agent is None:
         logger.info("Initializing RAG agent...")
@@ -46,26 +39,15 @@ def get_rag_agent() -> RAGAgent:
     """,
 )
 async def query_endpoint(request: QueryRequest) -> QueryResponse:
-    """
-    Process a farmer's query through the RAG pipeline.
-
-    Args:
-        request: QueryRequest containing the question
-
-    Returns:
-        QueryResponse with answer, intent, sources, and confidence score
-    """
     logger.info(f"Received query: {request.question[:100]}...")
 
     try:
-        # Get the RAG agent
         agent = get_rag_agent()
 
-        # Process the query through the LangGraph workflow
         response = agent.process_query(request.question)
 
         logger.info(
-            f"Query processed - Intent: {response.intent.value}, Confidence: {response.confidence}"
+            f"Query processed - Intent: {response.intent.value}"
         )
 
         return response
@@ -73,18 +55,3 @@ async def query_endpoint(request: QueryRequest) -> QueryResponse:
     except Exception as e:
         logger.error(f"Error processing query: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
-
-
-@router.get(
-    "/health",
-    summary="Health check endpoint",
-    description="Check if the query service is healthy and RAG agent is initialized",
-)
-async def health_check():
-    """Health check for the query service."""
-    try:
-        agent = get_rag_agent()
-        stats = agent.vector_store.get_collection_stats()
-        return {"status": "healthy", "rag_agent": "initialized", "collections": stats}
-    except Exception as e:
-        return {"status": "unhealthy", "error": str(e)}

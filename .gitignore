@@ -15,11 +15,6 @@ env/
 .env
 .env.local
 
-# Data and databases
-data/chroma/
-data/*.db
-data/*.sqlite
-
 # Logs
 logs/*.log
 *.log
