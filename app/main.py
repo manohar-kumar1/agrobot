@@ -12,6 +12,11 @@ from app.core.logging_config import setup_logging, get_logger
 setup_logging(log_level="INFO" if not settings.debug else "DEBUG")
 logger = get_logger(__name__)
 
+if settings.mistral_api_key:
+    logger.info(f"Mistral API key loaded: {settings.mistral_api_key[:10]}...")
+else:
+    logger.error("MISTRAL_API_KEY environment variable is not set or empty!")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
