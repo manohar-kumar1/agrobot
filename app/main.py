@@ -6,6 +6,8 @@ from app.api.v1.endpoints.query import router as query_router
 from app.models.config import settings
 from app.core.logging_config import setup_logging, get_logger
 
+# Agrobot API for farmers
+
 
 setup_logging(log_level="INFO" if not settings.debug else "DEBUG")
 logger = get_logger(__name__)
