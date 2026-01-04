@@ -1,8 +1,3 @@
-"""
-LLM service for managing language model interactions.
-Provides a centralized interface for Mistral AI API calls.
-"""
-
 from typing import List, Dict, Any
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -12,16 +7,7 @@ from app.models.config import settings
 
 
 class LLMService:
-    """Service for managing Mistral LLM interactions"""
-
     def __init__(self, model_name: str | None = None, temperature: float | None = None):
-        """
-        Initialize LLM service with Mistral.
-
-        Args:
-            model_name: Mistral model name (defaults to config)
-            temperature: Sampling temperature (defaults to config)
-        """
         self.model_name = model_name or settings.mistral_model
         self.temperature = (
             temperature if temperature is not None else settings.mistral_temperature
@@ -30,7 +16,6 @@ class LLMService:
 
     @property
     def llm(self) -> ChatMistralAI:
-        """Lazy initialization of Mistral LLM"""
         if self._llm is None:
             self._llm = ChatMistralAI(
                 model=self.model_name,
@@ -42,17 +27,6 @@ class LLMService:
     def generate_response(
         self, prompt: str, context: List[str] | None = None, max_tokens: int = 1000
     ) -> str:
-        """
-        Generate a response using the LLM.
-
-        Args:
-            prompt: User's question or prompt
-            context: Optional context documents
-            max_tokens: Maximum tokens in response
-
-        Returns:
-            Generated response text
-        """
         if context:
             context_text = "\n\n".join(context)
             full_prompt = f"Context:\n{context_text}\n\nQuestion: {prompt}"
@@ -63,15 +37,6 @@ class LLMService:
         return response.content
 
     def classify_intent(self, query: str) -> Dict[str, Any]:
-        """
-        Classify query intent using LLM with confidence score.
-
-        Args:
-            query: User's question
-
-        Returns:
-            Dict with intent and confidence
-        """
         classification_prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -113,8 +78,6 @@ Be strict: Only classify as HYBRID if the query explicitly connects disease/pest
 
         chain = classification_prompt | self.llm | StrOutputParser()
         result = chain.invoke({"query": query})
-
-        # Parse the response
         lines = result.strip().split("\n")
         intent = "unknown"
         confidence = 0.5
@@ -140,18 +103,6 @@ Be strict: Only classify as HYBRID if the query explicitly connects disease/pest
     def generate_rag_response(
         self, query: str, documents: List[Dict[str, Any]], intent: str
     ) -> str:
-        """
-        Generate response using retrieved documents with RAG.
-
-        Args:
-            query: User's question
-            documents: Retrieved documents with metadata
-            intent: Classified intent type
-
-        Returns:
-            Generated response text
-        """
-        # Format context from documents
         context_parts = []
         for i, doc in enumerate(documents, 1):
             source = doc.get("source", "Unknown")
@@ -160,47 +111,94 @@ Be strict: Only classify as HYBRID if the query explicitly connects disease/pest
             context_parts.append(f"[Source {i}: {source}, Page {page}]\n{content}")
 
         context = "\n\n".join(context_parts)
-
-        # Different prompts based on intent
         if intent == "hybrid":
             system_prompt = """You are an expert agricultural advisor helping Indian farmers with citrus crops.
 
 The farmer is asking about BOTH disease/pest management AND government support schemes.
 
-Using the provided context, give a comprehensive response that:
-1. First explains the disease/pest issue and management strategies
-2. Then describes relevant government schemes and financial support available
-3. Provides actionable steps the farmer can take
-4. Uses simple, farmer-friendly language
+CRITICAL RESPONSE FORMAT - Follow this EXACT structure:
 
-Structure your response with clear sections:
-- DISEASE MANAGEMENT: (treatment, prevention, identification)
-- GOVERNMENT SUPPORT: (schemes, subsidies, how to apply)
+For managing [disease/pest name], here's integrated support available:
 
-If specific information is not in the context, say so rather than making things up.
-Always cite which source document the information comes from."""
+DISEASE MANAGEMENT:
+[Disease name] is [brief description]. Key management: 1) [First action], 2) [Second action], 3) [Third action], 4) [Fourth action if applicable].
+
+GOVERNMENT SUPPORT:
+1) [Scheme Name 1] - [specific benefits and details], 2) [Scheme Name 2] - [specific benefits and details], 3) [Scheme Name 3] - [specific benefits and details], 4) [Additional scheme if applicable]. Contact your District Horticulture/Agriculture Officer for [relevant support].
+
+CRITICAL FORMATTING RULES - MUST FOLLOW:
+- Use numbered lists with ) format: 1), 2), 3)
+- Keep the response as a SINGLE PARAGRAPH for each section (no line breaks within sections)
+- Include specific details: chemical names, concentrations, subsidy percentages, scheme acronyms
+- Provide actionable steps farmers can immediately follow
+- Mention application processes and where to apply
+- Be comprehensive but concise - aim for detailed yet readable responses
+
+ABSOLUTELY NO MARKDOWN FORMATTING:
+- Do NOT use asterisks (*) for any formatting
+- Do NOT use underscores (_) for emphasis
+- Do NOT use backticks (`) for code
+- Do NOT use any special formatting characters
+- Use ONLY plain text with numbered lists using ) format
+
+If specific information is not in the context, say so rather than making things up."""
         elif intent == "disease":
             system_prompt = """You are an expert agricultural advisor helping Indian farmers with citrus crops.
 
-Using the provided context about citrus diseases and pests, give a helpful response that:
-1. Identifies the disease/pest if symptoms are described
-2. Explains treatment and prevention methods
-3. Provides practical, actionable advice
-4. Uses simple, farmer-friendly language
+Using the provided context about citrus diseases and pests, generate a response following this EXACT FORMAT:
 
-If the farmer describes symptoms, try to identify potential causes.
+CRITICAL RESPONSE FORMAT:
+- Start directly with the answer (no greetings or preamble)
+- Use numbered lists with ) format: 1), 2), 3), 4), 5)
+- Keep as a SINGLE FLOWING PARAGRAPH - do NOT use line breaks or bullet points
+- Include specific details: chemical names with concentrations (e.g., "Copper oxychloride 0.3%"), dosages (e.g., "1 ml/L"), timing (e.g., "February, June-July, October")
+- Provide actionable, step-by-step advice farmers can immediately follow
+
+Example format for disease prevention:
+"To prevent [Disease] in your orchard: 1) [First action with specific details], 2) [Second action with specific details], 3) [Third action with specific details], 4) [Fourth action with specific details], 5) [Fifth action with specific details], 6) [Additional action if needed]."
+
+Example format for symptom identification:
+"The [symptoms described] could indicate [Disease Name]. This is characterized by [specific symptoms]. Other symptoms include [additional symptoms]. [Disease Name] is [brief description of cause/transmission]. Immediate actions: 1) [First action], 2) [Second action], 3) [Third action], 4) [Fourth action]."
+
+Example format for treatment:
+"For [pest/disease] control on citrus: 1) Biological Control: [specific method with details], 2) Organic Options: [specific products with concentrations], 3) Chemical Control (if severe): [specific chemicals with dosages], 4) [Additional integrated management step], 5) [Final recommendation]."
+
+ABSOLUTELY NO MARKDOWN FORMATTING:
+- Do NOT use asterisks (*) for any formatting or emphasis
+- Do NOT use underscores (_) for emphasis
+- Do NOT use backticks (`) for code
+- Do NOT use any special formatting characters
+- Use ONLY plain text with numbered lists using ) format
+- Write scientific names in plain text without italics (e.g., write "Diaphorina citri" not "*Diaphorina citri*")
+
 If specific information is not in the context, say so rather than making things up."""
-        else:  # scheme
+        else:
             system_prompt = """You are an expert agricultural advisor helping Indian farmers understand government schemes.
 
-Using the provided context about government agricultural schemes, give a helpful response that:
-1. Explains relevant schemes and their benefits
-2. Describes eligibility criteria
-3. Outlines the application process
-4. Mentions subsidy amounts and coverage where available
-5. Uses simple, farmer-friendly language
+Using the provided context about government agricultural schemes, generate a response following this EXACT FORMAT:
 
-Provide specific details about schemes mentioned in the context.
+CRITICAL RESPONSE FORMAT:
+- Start directly with the answer (no greetings or preamble)
+- Use numbered lists with ) format: 1), 2), 3), 4), 5)
+- Keep as a SINGLE FLOWING PARAGRAPH - do NOT use line breaks or bullet points
+- Include specific details: scheme names with acronyms, subsidy percentages, amounts in ₹, eligibility criteria
+
+Example format for available schemes:
+"Several government schemes are available for [topic]: 1) [Scheme Name (Acronym)] - [specific benefits with amounts/percentages], 2) [Scheme Name (Acronym)] - [specific benefits], 3) [Scheme Name (Acronym)] - [specific benefits with ₹ amounts], 4) [Scheme Name (Acronym)] - [specific benefits], 5) [Additional scheme or credit options]."
+
+Example format for specific scheme inquiry:
+"Yes, [topic] subsidies are available under [Scheme Name (Acronym)]. The scheme provides: 1) Subsidy up to [X]% for small and marginal farmers, 2) Subsidy up to [Y]% for other farmers, 3) Additional [Z]% assistance for SC/ST farmers, 4) Coverage includes [specific items covered]. Application process: [Step-by-step application instructions]."
+
+Example format for financial assistance:
+"Financial assistance for [topic] is available through: 1) [Scheme Name (Acronym)] - provides ₹[amount] per hectare over [duration], includes [specific support], 2) [Scheme Name (Acronym)] - [specific assistance], 3) [Scheme Name (Acronym)] - up to [X]% subsidy for [specific items]. Benefits include: [list of benefits]. Apply through: [application method and contact points]."
+
+ABSOLUTELY NO MARKDOWN FORMATTING:
+- Do NOT use asterisks (*) for any formatting or emphasis
+- Do NOT use underscores (_) for emphasis
+- Do NOT use backticks (`) for code
+- Do NOT use any special formatting characters
+- Use ONLY plain text with numbered lists using ) format
+
 If specific information is not in the context, say so rather than making things up."""
 
         rag_prompt = ChatPromptTemplate.from_messages(
@@ -213,7 +211,7 @@ If specific information is not in the context, say so rather than making things 
 
 Farmer's Question: {query}
 
-Provide a helpful, detailed response based on the context above. Include specific recommendations where possible.""",
+Generate a response following the EXACT format specified. Use numbered lists with ) format. Keep response as flowing paragraphs without line breaks. Include specific details from the context.""",
                 ),
             ]
         )
@@ -226,18 +224,6 @@ Provide a helpful, detailed response based on the context above. Include specifi
     def generate_with_citations(
         self, query: str, documents: List[Dict[str, Any]], intent: str
     ) -> Dict[str, Any]:
-        """
-        Generate response with source citations.
-
-        Args:
-            query: User's question
-            documents: Retrieved documents with metadata
-            intent: Classified intent type
-
-        Returns:
-            Response dict with answer and formatted citations
-        """
-        # Handle edge case: no documents
         if not documents:
             return {
                 "answer": self._generate_no_results_response(query, intent),
@@ -246,100 +232,48 @@ Provide a helpful, detailed response based on the context above. Include specifi
 
         answer = self.generate_rag_response(query, documents, intent)
 
-        # Format citations from documents with enhanced scoring
-        citations = []
-        seen_sources = set()
-
-        for doc in documents:
-            source = doc.get("source", "Unknown")
-            page = doc.get("page")
-            # Use rerank_score if available, otherwise use similarity score
-            score = doc.get("rerank_score") or doc.get("score", 0.0)
-            content = doc.get("content", "")
-            collection = doc.get("collection", "unknown")
-
-            # Create unique key to avoid duplicates
-            source_key = f"{source}_{page}"
-            if source_key not in seen_sources:
-                seen_sources.add(source_key)
-
-                # Determine confidence level
-                if score >= 0.8:
-                    confidence = "high"
-                elif score >= 0.5:
-                    confidence = "medium"
-                else:
-                    confidence = "low"
-
-                citations.append(
-                    {
-                        "document": source,
-                        "page": page,
-                        "relevance_score": round(score, 3) if score else None,
-                        "confidence": confidence,
-                        "collection": collection,
-                        "excerpt": (
-                            content[:200] + "..." if len(content) > 200 else content
-                        ),
-                    }
-                )
-
-        return {"answer": answer, "citations": citations}
+        return {"answer": answer, "citations": []}
 
     def _generate_no_results_response(self, query: str, intent: str) -> str:
-        """
-        Generate response when no relevant documents found.
-
-        Args:
-            query: User's question
-            intent: Classified intent type
-
-        Returns:
-            Helpful response explaining no results
-        """
         if intent == "disease":
             return (
                 "I couldn't find specific information about that disease or pest in my knowledge base. "
-                "Please try describing the symptoms in more detail (e.g., 'yellow spots on leaves', "
-                "'wilting fruit'), or ask about common citrus issues like Citrus Canker, "
-                "Citrus Greening (HLB), or whitefly infestations."
+                "Please try: 1) Describing the symptoms in more detail (e.g., 'yellow spots on leaves', 'wilting fruit'), "
+                "2) Asking about common citrus issues like Citrus Canker, Citrus Greening (HLB), or whitefly infestations, "
+                "3) Specifying the affected plant part (leaves, fruits, stems, roots)."
             )
         elif intent == "scheme":
             return (
                 "I couldn't find information about that specific government scheme. "
-                "Try asking about popular programs like PMKSY (drip irrigation), "
-                "National Horticulture Mission (NHM), or Kisan Credit Card (KCC). "
-                "You can also ask about subsidies for specific farming activities."
+                "Try asking about: 1) Pradhan Mantri Krishi Sinchai Yojana (PMKSY) for drip irrigation subsidies, "
+                "2) National Horticulture Mission (NHM) for citrus plantation support, "
+                "3) Kisan Credit Card (KCC) for agricultural loans, "
+                "4) Paramparagat Krishi Vikas Yojana (PKVY) for organic farming assistance."
             )
         else:
             return (
                 "I couldn't find relevant information to answer your question. "
-                "I specialize in citrus crop diseases/pests and government agricultural schemes. "
-                "Please try rephrasing your query or ask about topics like disease treatment, "
-                "pest control, or available farmer subsidies."
+                "I specialize in: 1) Citrus crop diseases and pests - symptoms, treatment, and prevention, "
+                "2) Government agricultural schemes - subsidies, eligibility, and application processes, "
+                "3) Combined support for disease management with government assistance. "
+                "Please try rephrasing your query with more specific details."
             )
 
     def generate_ambiguous_query_response(self, query: str) -> str:
-        """
-        Generate response for ambiguous or unclear queries.
-
-        Args:
-            query: User's ambiguous question
-
-        Returns:
-            Response asking for clarification
-        """
         clarification_prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
                     """You are a helpful agricultural advisor. The farmer's query is unclear or too brief.
-Generate a friendly response that:
-1. Acknowledges you want to help
-2. Explains what information you need
-3. Gives 2-3 specific example questions they could ask
 
-Keep the response brief and farmer-friendly.""",
+Generate a response in this EXACT FORMAT:
+"I'd like to help you with your query about [topic]. To provide accurate information, please specify: 1) [First clarification needed], 2) [Second clarification needed], 3) [Third clarification if applicable]. Example questions you could ask: '[Example question 1]', '[Example question 2]', '[Example question 3]'."
+
+IMPORTANT:
+- Use numbered lists with ) format
+- Keep as a single flowing paragraph
+- Be farmer-friendly and helpful
+- Provide specific example questions related to citrus farming or government schemes""",
                 ),
                 ("user", "Farmer's query: {query}"),
             ]
