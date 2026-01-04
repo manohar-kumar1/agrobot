@@ -131,7 +131,6 @@ Sample responses
 {
    "success": true,
    "intent": "disease",
-   "route_to": "Citrus Pests & Diseases Knowledge Base",
    "answer": "Citrus canker is a bacterial disease..."
 }
 ```
@@ -140,7 +139,6 @@ Sample responses
 {
    "success": true,
    "intent": "scheme",
-   "route_to": "Government Schemes Knowledge Base",
    "answer": "Drip irrigation subsidies are available under PMKSY..."
 }
 ```
@@ -149,7 +147,6 @@ Sample responses
 {
    "success": true,
    "intent": "hybrid",
-   "route_to": "BOTH Knowledge Bases",
    "answer": "For managing Citrus Greening (HLB), here's integrated support..."
 }
 ```

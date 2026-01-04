@@ -18,6 +18,8 @@ class IntentClassifier:
             "disease": IntentType.DISEASE,
             "scheme": IntentType.SCHEME,
             "hybrid": IntentType.HYBRID,
+            "greeting": IntentType.GREETING,
+            "out_of_scope": IntentType.OUT_OF_SCOPE,
             "unknown": IntentType.UNKNOWN,
         }
 

@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     debug: bool = False
 
     mistral_api_key: str = ""
-    mistral_model: str = "mistral-small-latest"  # Faster than mistral-large
+    mistral_model: str = "mistral-small-latest"
     mistral_embedding_model: str = "mistral-embed"
-    mistral_temperature: float = 0.3  # Lower temperature for faster, more focused responses
+    mistral_temperature: float = 0.2
 
     langchain_api_key: str = ""
     langchain_tracing_v2: bool = True
@@ -20,13 +20,17 @@ class Settings(BaseSettings):
     diseases_collection_name: str = "citrus_diseases"
     schemes_collection_name: str = "government_schemes"
 
-    chunk_size: int = 1000
-    chunk_overlap: int = 200
-    top_k_results: int = 3  # Reduced from 5 for speed
+    chunk_size: int = 1500
+    chunk_overlap: int = 300
+    top_k_results: int = 5
 
-    min_relevance_score: float = 0.3
-    enable_reranking: bool = False  # Disabled - LLM reranking is slow, use vector similarity instead
-    rerank_top_k: int = 3
+    min_relevance_score: float = 0.25
+    enable_reranking: bool = True
+    rerank_top_k: int = 4
+
+    enable_hybrid_search: bool = True
+    bm25_weight: float = 0.3
+    semantic_weight: float = 0.7
 
     pdf_directory: str = "./data/pdfs"
     diseases_pdf: str = "CitrusPlantPestsAndDiseases.pdf"

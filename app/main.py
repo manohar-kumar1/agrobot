@@ -6,8 +6,6 @@ from app.api.v1.endpoints.query import router as query_router
 from app.models.config import settings
 from app.core.logging_config import setup_logging, get_logger
 
-# Agrobot API for farmers
-
 
 setup_logging(log_level="INFO" if not settings.debug else "DEBUG")
 logger = get_logger(__name__)
@@ -41,17 +39,17 @@ app = FastAPI(
 
 An intelligent RAG-based system that helps farmers with:
 
-## 🌱 Disease Information
+## Disease Information
 - Citrus crop diseases, symptoms, and identification
 - Treatment and prevention methods
 - Pest management strategies
 
-## 📋 Government Schemes
+## Government Schemes
 - Agricultural subsidies and financial assistance
 - Eligibility criteria and application processes
 - Available benefits and programs
 
-## 🔀 Hybrid Queries
+## Hybrid Queries
 - Queries combining disease management with government support
 - Financial help for pest control and treatment
 

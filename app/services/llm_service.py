@@ -41,36 +41,57 @@ class LLMService:
             [
                 (
                     "system",
-                    """You are an expert intent classifier for an agriculture chatbot helping farmers with citrus crops.
+                    """You are an expert intent classifier for an agriculture chatbot called AgroBot that helps farmers with citrus crops.
 
-Classify the farmer's query into exactly ONE of these three categories:
+Classify the farmer's query into exactly ONE of these categories:
 
-1. DISEASE - Questions about:
+1. GREETING - Greetings, salutations, or conversation starters:
+   - "Hi", "Hello", "Hey", "Good morning", "Namaste", "How are you"
+   - "Thank you", "Thanks", "Bye", "Goodbye"
+   - "Who are you?", "What can you do?", "Help me"
+   - Any casual conversation opener or closer
+
+2. DISEASE - Questions specifically about:
    - Crop diseases, pests, symptoms, infections
    - Treatment methods, pesticides, fungicides
    - Prevention and control measures
    - Plant health issues, nutritional deficiencies
    - Identification of problems on leaves, fruits, stems
+   - Examples: "My lemon leaves have yellow spots", "How to treat citrus canker?"
 
-2. SCHEME - Questions about:
+3. SCHEME - Questions specifically about:
    - Government subsidies and financial assistance
    - Agricultural programs and schemes (PMKSY, NHM, RKVY, etc.)
    - Eligibility criteria and application processes
    - Loans, insurance, and benefits for farmers
    - Policy-related queries
+   - Examples: "What subsidies are available for drip irrigation?", "How to apply for PM Kisan?"
 
-3. HYBRID - Questions that combine BOTH disease/pest management AND government support:
+4. HYBRID - Questions that explicitly combine BOTH disease/pest management AND government support:
    - Financial help for disease treatment
    - Subsidies for pest control equipment
    - Government schemes for managing specific diseases
-   - Any query connecting agricultural problems with government assistance
+   - Examples: "Is there government help for treating HLB?", "Subsidy for disease control sprays?"
 
-Analyze the query carefully and respond in this EXACT format:
-INTENT: <disease|scheme|hybrid>
+5. OUT_OF_SCOPE - Questions completely unrelated to agriculture:
+   - General knowledge questions ("What is the capital of India?")
+   - Technology, sports, entertainment topics
+   - Personal questions not about farming
+   - Non-citrus, non-farming topics
+   - Examples: "Tell me a joke", "What's the weather?", "Who won the cricket match?"
+
+CLASSIFICATION RULES:
+- Single words or very short phrases (1-3 words) that are greetings → GREETING
+- If query mentions ANY disease/pest/symptom/treatment → DISEASE (unless also mentions government/subsidy)
+- If query mentions ANY scheme/subsidy/government/loan/insurance → SCHEME (unless also mentions disease)
+- If query clearly connects disease AND government support → HYBRID
+- If query is completely off-topic (not about citrus farming or schemes) → OUT_OF_SCOPE
+- When uncertain between DISEASE and SCHEME, choose based on the PRIMARY focus of the query
+
+Respond in this EXACT format:
+INTENT: <greeting|disease|scheme|hybrid|out_of_scope>
 CONFIDENCE: <0.0-1.0>
-REASON: <brief explanation>
-
-Be strict: Only classify as HYBRID if the query explicitly connects disease/pest issues with government support.""",
+REASON: <brief explanation>""",
                 ),
                 ("user", "{query}"),
             ]
@@ -87,7 +108,13 @@ Be strict: Only classify as HYBRID if the query explicitly connects disease/pest
             line = line.strip()
             if line.upper().startswith("INTENT:"):
                 intent_value = line.split(":", 1)[1].strip().lower()
-                if intent_value in ["disease", "scheme", "hybrid"]:
+                if intent_value in [
+                    "disease",
+                    "scheme",
+                    "hybrid",
+                    "greeting",
+                    "out_of_scope",
+                ]:
                     intent = intent_value
             elif line.upper().startswith("CONFIDENCE:"):
                 try:
