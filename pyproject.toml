@@ -1,0 +1,20 @@
+[project]
+name = "agrobot"
+version = "0.1.0"
+description = "Agriculture Chatbot for Farmers - RAG system for citrus diseases and government schemes"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.4.0",
+    "fastapi>=0.128.0",
+    "langchain>=0.3.0",
+    "langchain-chroma>=0.2.0",
+    "langchain-community>=0.3.0",
+    "langchain-mistralai>=0.2.0",
+    "langgraph>=0.2.0",
+    "pydantic-settings>=2.0.0",
+    "pypdf>=5.1.0",
+    "uvicorn[standard]>=0.40.0",
+    "python-dotenv>=1.0.0",
+    "langchain-text-splitters>=1.1.0",
+]
